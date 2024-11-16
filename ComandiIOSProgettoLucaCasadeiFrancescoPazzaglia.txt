@@ -1,0 +1,69 @@
+/*	
+*	Breve spiegazione dei comandi IoS principali per il progetto 
+*	Luca Casadei
+*	Francesco Pazzaglia
+*/
+
+//Configurazione delle interfacce Router0 (Destra)
+Router(config)#interface GigabitEthernet0/0.2 //Seleziono la sottointerfaccia 2 (per il trunk)
+Router(config-subif)#encapsulation dot1Q 2 //Usato per indicare che l'interfaccia va usata in modalità trunk per la VLAN 2
+Router(config-subif)#ip address 192.168.1.190 255.255.255.192 //Impostazione indirizzo IP
+Router(config-subif)#ip nat inside //Indica al NAT che l'interfaccia è da usare per la rete privata
+Router(config-if)#exit
+Router(config)#interface GigabitEthernet0/0.3
+Router(config-subif)#encapsulation dot1Q 3 //Usato per indicare che l'interfaccia va usata in modalità trunk per la VLAN 3
+Router(config-subif)#ip address 192.168.1.254 255.255.255.192
+Router(config-subif)#ip nat inside
+Router(config-if)#exit
+//Procedimento analogo per le altre due con ip nat outside invece che inside. (Reti esterne)
+//Procedimento analogo per il Router1
+
+//Configurazione delle VLAN nello Switch1 (A destra)
+Switch(config)#vlan 2 //Creo e seleziono la vlan 2
+Switch(config-vlan)#name Ospiti // La chiamo "Ospiti"
+Switch(config-vlan)#exit
+Switch(config)#vlan 3 //Creo e seleziono la vlan 3
+Switch(config-vlan)#name Ufficio //La chiamo "Ufficio"
+Switch(config-vlan)#exit
+
+//Configurazione delle interfacce dello Switch1 (Destra, quello con le VLAN)
+Switch(config)#interface range fa/1-10 //Seleziono il range di interfacce da 1 a 10
+Switch(config-if-range)#switchport access vlan 2 //Assegno le interfacce alla VLAN 2 (Ospiti)
+Switch(config-if-range)#switchport mode access //Disabilita forzatamente il trunk sul range (opzionale)
+//Procedimento analogo per il range da 11 a 20 con vlan 3 invece che 2
+Switch(config)#interface gig0/1 //Seleziono l'interfaccia su cui viene fatto il trunk
+Switch(config-if)#switchport mode trunk //Abilito la modalità trunk sull'interfaccia
+Switch(config-if)#switchport trunk allowed vlan add 2 //Abilito il traffico della vlan 2
+Switch(config-if)#switchport trunk allowed vlan add 3 //Abilito il traffico della vlan 3
+
+// Impostazione del DHCP nel gateway per gli uffici (Analogo per gli ospiti)
+Router>ena
+Router#conf t
+Enter configuration commands, one per line.  End with CNTL/Z.
+Router(config)#service dhcp //Abilito e configuro il servizio dhcp
+Router(config)#ip dhcp pool uffici //Definisco un pool di indirizzi con il nome "uffici"
+Router(dhcp-config)#network 192.168.1.192 255.255.255.192 //Assegno l'indirizzo di rete e la subnet mask del pool
+Router(dhcp-config)#default-router 192.168.1.255 //Assegno l'indirizzo di default gateway al pool
+Router(dhcp-config)#dns-server 8.8.8.8 //Assegno il server DNS di default al pool
+Router(dhcp-config)#ip dhcp excluded-address 192.168.1.200 //Per non assegnare l'IP riservato al server.
+Router(dhcp-config)#exit
+Router(config)#interface gig0/0.3 //Seleziono l'interfaccia con la VLAN 3
+Router(config-subif)#ip dhcp pool uffici //Assegno il pool uffici alla sottointerfaccia
+
+// Impostazione del protocollo di routing OSPF nel Router0 (Destra) procedimento analogo per Router1
+Router(config)#router ospf 1
+Router(config-router)#network 12.0.0.0 0.255.255.255 area 0 //Collego tutte le network che devono essere instradate.
+Router(config-router)#network 11.0.0.0 0.255.255.255 area 0
+Router(config-router)#network 192.168.1.128 0.0.0.63 area 0
+Router(config-router)#network 192.168.1.192 0.0.0.63 area 0
+
+// Impostazione del nat dinamico in Router1 (Un solo IP pubblico usato da tutti gli host connessi, con overload)
+// Qui viene impostato il range di indirizzi pubblici da assegnare, in questo caso uno solo (12.255.255.254)
+Router(config)#ip nat pool natp 12.255.255.254 12.255.255.254 netmask 255.0.0.0 //natp è il nome del pool
+// Creo un'access list per permettere a tutti gli ospiti di uscire dalla rete (con numero 10)
+Router(config)#access-list 10 permit 10.0.0.0 0.255.255.255
+//Viene impostato pool creato con il comando precedente, all'access list 10 con modalità overload (riutilizzo dello stesso indirizzo)
+Router(config)#ip nat inside source list 10 pool natp overload 
+
+// Impostazione del nat statico in Router0 (Un solo IP pubblico usato solamente dal web-server 192.168.1.200 --> 12.0.0.1)
+Router(config)#ip nat inside source static 192.168.1.200 12.0.0.1
