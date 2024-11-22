@@ -1,7 +1,7 @@
 /*	
 *	Breve spiegazione dei comandi IoS principali per il progetto 
-*	Luca Casadei
-*	Francesco Pazzaglia
+*	Luca Casadei 0001069237
+*	Francesco Pazzaglia 0001077423
 */
 
 //Configurazione delle interfacce Router0 (Destra)
