@@ -1,0 +1,55 @@
+\documentclass[a4paper]{article}
+\usepackage[italian]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1cm, top=0cm]{geometry}
+\usepackage{amsmath}
+
+\title{\textbf{Documentazione elaborato\\Reti di Telecomunicazione 2024}}
+\author{Luca Casadei\\Francesco Pazzaglia}
+\date{Ultima modifica: \today}
+\pagenumbering{gobble}
+
+\begin{document}
+	\maketitle
+	\section{Descrizione Progetto}
+	Si vuole realizzare un'infrastruttura di rete composta da diversi settori, in particolare, 2 interni, un collegamento esterno con una rete Internet simulata ed una rete wireless a cui si può accedere pubblicamente. Si suppone che a ciascuna rete interna non siano collegati più di 50 apparati, mentre la rete pubblica ne supporta molti di più. Nel complesso, l'organizzazione delle reti può essere riassunta nella seguente maniera:
+	\begin{itemize}
+		\item Area \textbf{Ufficio}: Suddivisa attraverso VLAN (3), vengono simulati 2 apparati client (PC e stampante) e un apparato Server, quest'ultimo mette a disposizione una pagina web da visualizzare (Web-Server).
+		\item Area \textbf{Ospiti}: Suddivisa attraverso VLAN (2), vengono simulati 5 apparati, di cui 3 con collegamento via cavo e 2 collegati via etere.
+		\item Area \textbf{WiFiPubblico}: Su router separato, vengono simulati 4 apparati tutti collegati attraverso etere ad un access point, su questa rete non viene configurata alcuna VLAN.
+	\end{itemize}
+	Dato lo scopo didattico dell'esercitazione, quindi per verificare la corretta configurazione dei protocolli di routing dei gateway e delle VLAN nello switch, tutti i dispositivi vengono fatti comunicare tra loro, in una rete realistica, questo non avviene.
+	\section{Indirizzamento}
+	Dato il numero di apparati gestibili dalle reti interne, come subnet mask sono stati scelti 26 bit per le reti, e 6 bit per gli host, in modo tale da poter gestire $(2^{6} - 2)$ macchine e $2^{26}$ reti. La maschera scelta è quindi $255.255.255.192$ e la relativa wildcard $0.0.0.63$ usata per il protocollo di routing \textit{OSPF} configurato nei due gateway.\\
+	Dovendo gestire molti più host, per la rete pubblica è stato usato l'indirizzo di classe A con maschera $255.0.0.0$ e wildcard $0.255.255.255$ per OSPF.\\
+	Indirizzamento dettagliato delle reti:
+	\begin{itemize}
+		\item Area \textbf{Ufficio}:
+		\begin{itemize}
+			\item Rete: 192.168.1.192/26
+			\item DG: 192.168.1.254
+		\end{itemize}
+		\item Area \textbf{Ospiti}:
+		\begin{itemize}
+			\item Rete: 192.168.1.128/26
+			\item DG: 192.168.1.190
+		\end{itemize}
+		\item Area \textbf{WiFiPubblico}:
+		\begin{itemize}
+			\item Rete: 10.0.0.0/8
+			\item DG: 10.255.255.254
+		\end{itemize}
+		\item Area tra gateway:
+		\begin{itemize}
+			\item Rete: 12.0.0.0/8
+			\item Router1: 12.255.255.254
+			\item Router0: 12.0.0.1
+		\end{itemize}
+		\item Area \textbf{Internet}:
+		\begin{itemize}
+			\item Rete: 11.0.0.0/8
+			\item Router1: 12.255.255.253
+		\end{itemize}
+	\end{itemize}
+	Ulteriori configurazioni sono visualizzabili dalla lista dei comandi.
+\end{document}
